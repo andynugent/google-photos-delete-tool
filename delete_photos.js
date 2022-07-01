@@ -1,75 +1,60 @@
-// How many photos to delete?
-// Put a number value, like this
-// const maxImageCount = 5896
-const maxImageCount = "ALL_PHOTOS";
-
 // Selector for Images and buttons
 const ELEMENT_SELECTORS = {
     checkboxClass: '.ckGgle',
+    dateCheckboxClass: '.R4HkWb',
     deleteButton: 'button[aria-label="Delete"]',
     languageAgnosticDeleteButton: 'div[data-delete-origin] > button',
-    deleteButton: 'button[aria-label="Delete"]',
     confirmationButton: '#yDmH0d > div.llhEMd.iWO5td > div > div.g3VIld.V639qd.bvQPzd.oEOLpc.Up8vH.J9Nfi.A9Uzve.iWO5td > div.XfpsVe.J9fJmf > button.VfPpkd-LgbsSe.VfPpkd-LgbsSe-OWXEXe-k8QpJ.nCP5yc.kHssdc.HvOprf'
 }
 
-// Time Configuration (in milliseconds)
-const TIME_CONFIG = {
-    delete_cycle: 10000,
-    press_button_delay: 2000
-};
-
+const delete_cycle = 20000;
+const press_button_delay = 2000;
 const MAX_RETRIES = 10;
 
-let imageCount = 0;
-
-let checkboxes;
-let buttons = {
-    deleteButton: null,
-    confirmationButton: null
-}
+let dateCount = 0;
 
 let deleteTask = setInterval(() => {
-    let attemptCount = 1;
 
-    do {
-        checkboxes = document.querySelectorAll(ELEMENT_SELECTORS['checkboxClass']);
+	let attemptCount = 1;
 
-    } while (checkboxes.length <= 0 && attemptCount++ < MAX_RETRIES);
+	var checkboxes;
+	do {
+		console.log(`#     Selecting date checkboxes...`);
+		checkboxes = document.querySelectorAll(ELEMENT_SELECTORS['dateCheckboxClass']);
+	} while (checkboxes.length <= 0 && attemptCount++ < MAX_RETRIES);
 
+	if (checkboxes.length <= 0) {
+		console.log("# No more images to delete.");
+		clearInterval(deleteTask);
+		console.log("# Tool exited.");
+		return;
+	}
 
-    if (checkboxes.length <= 0) {
-        console.log("[INFO] No more images to delete.");
-        clearInterval(deleteTask);
-        console.log("[SUCCESS] Tool exited.");
-        return;
-    }
+	console.log(`#     Selecting ${checkboxes.length} days...`);
+	checkboxes.forEach((checkbox) => { checkbox.click() });
 
-    imageCount += checkboxes.length;
+	setTimeout(() => {
+		console.log(`#     Pressing delete button for ${checkboxes.length} days...`);
+		try {
+			const deleteButton = document.querySelector(ELEMENT_SELECTORS['languageAgnosticDeleteButton']);
+			deleteButton.click();
+		} catch {
+			const deleteButton = document.querySelector(ELEMENT_SELECTORS['deleteButton']);
+			deleteButton.click();
+		}
 
-    checkboxes.forEach((checkbox) => { checkbox.click() });
-    console.log("[INFO] Deleting", checkboxes.length, "images");
+		setTimeout(() => {
+			console.log(`#     Confirming delete for ${checkboxes.length} days...`);
+			const confirmation_button = document.querySelector(ELEMENT_SELECTORS['confirmationButton']);
+			confirmation_button.click();
+			
+			console.log(`#     Deleting ${checkboxes.length} days...`);
 
-    setTimeout(() => {
-        try {
-            buttons.deleteButton = document.querySelector(ELEMENT_SELECTORS['languageAgnosticDeleteButton']);
-            buttons.deleteButton.click();
-        } catch {
-            buttons.deleteButton = document.querySelector(ELEMENT_SELECTORS['deleteButton']);
-            buttons.deleteButton.click();
-        }
+			dateCount += checkboxes.length;
+			console.log(`# Deleted ${dateCount} days in total`);
+			
+		}, press_button_delay);
 
-        setTimeout(() => {
-            buttons.confirmation_button = document.querySelector(ELEMENT_SELECTORS['confirmationButton']);
-            buttons.confirmation_button.click();
-
-            console.log(`[INFO] ${imageCount}/${maxImageCount} Deleted`);
-            if (maxImageCount !== "ALL_PHOTOS" && imageCount >= parseInt(maxImageCount)) {
-                console.log(`${imageCount} photos deleted as requested`);
-                clearInterval(deleteTask);
-                console.log("[SUCCESS] Tool exited.");
-                return;
-            }
-
-        }, TIME_CONFIG['press_button_delay']);
-    }, TIME_CONFIG['press_button_delay']);
-}, TIME_CONFIG['delete_cycle']);
+	}, press_button_delay);
+	
+}, delete_cycle);
